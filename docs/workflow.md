@@ -50,12 +50,44 @@ from the `Flagged Ambiguities` section. The gate out of each loop iteration is a
 ## The Pipeline
 
 ```
-Speculate ──► Illustrate ──► Formulate ──► Automate ──► Demonstrate ──► Validate
-    │              │              │              │              │              │
-Event         Example        Reqnroll       Reqnroll       Passing        Aspire
-Storming      Mapping        .feature       Steps.cs       tests =        dashboard
-(DDD)         (BDD)          file           HttpClient     living docs    + usage
+[Orient] ──► Speculate ──► Illustrate ──► Formulate ──► Automate ──► Demonstrate ──► Validate
+    │             │              │              │              │              │              │
+Impact        Event         Example        Reqnroll       Reqnroll       Passing        Aspire
+Mapping       Storming      Mapping        .feature       Steps.cs       tests =        dashboard
+(optional)    (DDD)         (BDD)          file           HttpClient     living docs    + usage
 ```
+
+---
+
+## Phase 0 — Orient (optional)
+
+**Goal:** decide *which* Bounded Contexts are worth building before entering the domain model.
+
+Run an **Impact Mapping** session with business stakeholders. Keep it to one map per
+Bounded Context candidate. A minimal map has four columns:
+
+```
+Goal (why)  →  Actors (who)  →  Impacts (how they help/hinder)  →  Deliverables (what we build)
+```
+
+Example for an agile project management context:
+
+| Goal | Actor | Impact | Deliverable |
+|---|---|---|---|
+| Ship faster | Developer | Commits work in smaller slices | Commit BacklogItem to Sprint |
+| Ship faster | Product Owner | Reprioritises backlog without sprint disruption | Move BacklogItem between Sprints |
+| Ship faster | Scrum Master | Surfaces blocked items earlier | Flag BacklogItem as impediment |
+
+Rules:
+- The **Goal** must be a measurable business outcome, not a feature ("reduce cycle time by 20%", not "add sprint planning").
+- Only Deliverables that trace to an Impact get a Bounded Context storm. Everything else is deferred.
+- Each Deliverable column entry becomes a candidate Command in the next phase.
+
+Artefacts produced:
+- One impact map diagram per candidate context (any format; Miro, whiteboard photo, or ASCII table committed to `docs/`)
+- A short prioritisation list: which Bounded Contexts to storm first, and why
+
+This phase is optional but strongly recommended when the scope of the domain is unclear or when multiple Bounded Contexts are competing for sprint capacity.
 
 ---
 
@@ -64,8 +96,8 @@ Storming      Mapping        .feature       Steps.cs       tests =        dashbo
 **Goal:** identify what to build and why, at the domain level.
 
 Run an **Event Storming** session (Big Picture, then Software Design level) with domain
-experts and developers. Output: Aggregates, Commands, and Domain Events named in the
-Ubiquitous Language.
+experts and developers. Input: the Deliverables column from the impact map (if Phase 0 ran).
+Output: Aggregates, Commands, and Domain Events named in the Ubiquitous Language.
 
 Artefacts produced:
 - Updated `CONTEXT.md` — Ubiquitous Language table, Aggregates table, resolved Flagged Ambiguities
@@ -242,6 +274,7 @@ Use the **Aspire dashboard** to observe the full event flow:
 
 ## Adding a New Use Case
 
+0. **Orient** (if scope is unclear): run Impact Mapping; confirm the Bounded Context has a traceable business goal before storming
 1. **Speculate / Illustrate**: run Example Mapping; resolve all red cards; update `CONTEXT.md`
 2. **Formulate**: create `<UseCase>.feature` in `<Context>.Tests/<Aggregate>/<UseCase>/`
 3. **Automate**: add `Steps.cs` and `StepContext.cs`; run — watch it fail (red)
