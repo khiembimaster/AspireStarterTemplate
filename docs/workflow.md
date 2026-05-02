@@ -6,6 +6,20 @@ mapped to the specific tools and artefacts in this repo.
 
 ---
 
+## Phases 1 + 2 as Event Mapping
+
+Phases 1 (Speculate) and 2 (Illustrate) together constitute an **Event Mapping** session
+(Kenny Baas-Schwegler). Event Mapping runs Event Storming and Example Mapping back-to-back
+in one workshop: the team surfaces Commands and Domain Events, then immediately pivots to
+example cards for each pair without leaving the room.
+
+This workflow keeps the phase boundary explicit because the gate does real work: Example
+Mapping on a Command that still has flagged ambiguities produces examples that contradict
+each other. Settling `CONTEXT.md` first is the guard against that. Readers familiar with
+Event Mapping can treat Phases 1 and 2 as one session; the artefact split still applies.
+
+---
+
 ## DDD and BDD — a Refinement Loop
 
 These are not competing approaches, and they are not strictly sequential either.
