@@ -113,13 +113,18 @@ AspireStarterTemplate.sln
 ├── src/
 │   ├── SharedKernel/
 │   ├── AgileProjectManagement/
-│   ├── AgileProjectManagement.IntegrationEvents/
+│   │   ├── AgileProjectManagement.Application/
+│   │   ├── AgileProjectManagement.Tests/
+│   │   └── AgileProjectManagement.IntegrationEvents/
 │   ├── Collaboration/
-│   ├── Collaboration.IntegrationEvents/
+│   │   ├── Collaboration.Application/
+│   │   ├── Collaboration.Tests/
+│   │   └── Collaboration.IntegrationEvents/
 │   ├── IdentityAccess/
-│   ├── IdentityAccess.IntegrationEvents/
-│   ├── Server/                            # YARP gateway + SPA host
-│   └── IntegrationTests/
+│   │   ├── IdentityAccess.Application/
+│   │   ├── IdentityAccess.Tests/
+│   │   └── IdentityAccess.IntegrationEvents/
+│   └── Server/                            # YARP gateway + SPA host
 ├── AppHost/
 ├── frontend/
 └── docs/
@@ -150,7 +155,7 @@ reference: aggregate types and their feature slices are co-located under a singl
 folder. There is no `Features/` or `Domain/` nesting layer (see ADR-001).
 
 ```
-src/<ContextName>/
+src/<ContextName>/<ContextName>.Application/
 ├── <AggregateName>/
 │   ├── <AggregateName>Aggregate.cs          # AggregateRoot<T,TId> — methods emit events
 │   ├── <AggregateName>WriteModel.cs         # AggregateState<T,TId,TState> — applies events
@@ -175,11 +180,18 @@ src/<ContextName>/
 └── GlobalUsings.cs
 ```
 
-Each context has a sibling integration-events project for its cross-context contracts:
+Each context folder also contains a test project and an integration-events project:
 
 ```
-src/<ContextName>.IntegrationEvents/
-└── <IntegrationEventName>.cs               # Plain C# record — no domain dependencies
+src/<ContextName>/
+├── <ContextName>.Application/              # domain + application code (above)
+├── <ContextName>.Tests/                    # Reqnroll .feature files + step definitions
+│   ├── Features/
+│   │   └── <AggregateName>.feature
+│   └── StepDefinitions/
+│       └── <AggregateName>Steps.cs
+└── <ContextName>.IntegrationEvents/
+    └── <IntegrationEventName>.cs           # Plain C# record — no domain dependencies
 ```
 
 ---
@@ -371,6 +383,98 @@ Every aggregate root carries a `TenantId` (from `SharedKernel`). Two isolation l
 The ACL in `AgileProjectManagement/Shared/` translates the `tenant_id` JWT claim (issued
 by Keycloak) into the domain `TenantId` value object and populates a scoped `ITenantContext`.
 No other context reads `IdentityAccess` domain types directly.
+
+---
+
+## Testing Strategy
+
+### BDD Pipeline
+
+```
+Speculate / Illustrate    →  Event Storming session
+Formulate                 →  Reqnroll .feature files (Gherkin, Ubiquitous Language)
+Automate                  →  Reqnroll step definitions via HttpClient (full stack)
+Demonstrate               →  Passing tests = living documentation
+Validate                  →  Aspire dashboard traces + real usage
+```
+
+### Automate: HttpClient against real Aspire host
+
+Reqnroll step definitions call the real HTTP endpoints. No `EventFlow.TestHelpers`
+Given/When/Then at the aggregate level — all tests go through the full stack:
+YARP gateway → context service → EventFlow → PostgreSQL → read model projection.
+
+```
+[Given(@"a Product exists with a planned BacklogItem")]
+public async Task GivenAProductWithBacklogItem()
+{
+    // POST /api/agile/products  →  seed Product
+    // POST /api/agile/products/{id}/backlog-items  →  seed BacklogItem
+}
+
+[When(@"I commit the BacklogItem to a Sprint")]
+public async Task WhenICommitToSprint()
+{
+    // POST /api/agile/backlog-items/{id}/commit
+}
+
+[Then(@"the Sprint reflects the committed BacklogItem")]
+public async Task ThenSprintReflectsCommit()
+{
+    // GET /api/agile/sprints/{id}  →  assert read model
+}
+```
+
+**Why full-stack only**: the scaffold is a distributed system — the interesting bugs
+live in the wiring (RLS, MassTransit consumers, YARP routing, projection lag), not
+inside individual aggregates. HttpClient tests catch those; aggregate unit tests do not.
+
+### Seeding and Smoke Test
+
+`IntegrationTests/TestSeedingScript.cs` runs as an Aspire resource after all services
+pass health checks. It seeds one demo Tenant, one User per role, one Product with three
+BacklogItems, one Sprint, and one Forum — via the same HttpClient pattern. It doubles
+as a smoke test: if any HTTP call fails, the Aspire run fails.
+
+### Feature File Location
+
+Each context owns its tests. The `.Tests` project mirrors the aggregate-slice layout of
+the `.Application` project: one folder per aggregate, one subfolder per use case. File
+names are short — namespace provides the disambiguation (e.g.
+`AgileProjectManagement.Tests.Products.Create`).
+
+```
+src/AgileProjectManagement/AgileProjectManagement.Tests/
+├── Products/
+│   ├── Create/
+│   │   ├── Create.feature
+│   │   ├── Steps.cs             # [Given]/[When]/[Then] bindings
+│   │   └── StepContext.cs       # scenario-scoped shared state (IDs, responses)
+│   ├── PlanBacklogItem/
+│   │   ├── PlanBacklogItem.feature
+│   │   ├── Steps.cs
+│   │   └── StepContext.cs
+│   └── ScheduleSprint/
+│       ├── ScheduleSprint.feature
+│       ├── Steps.cs
+│       └── StepContext.cs
+├── BacklogItems/
+│   └── CommitToSprint/
+│       ├── CommitToSprint.feature
+│       ├── Steps.cs
+│       └── StepContext.cs
+├── Sprints/
+│   └── ...
+└── Shared/
+    ├── ApiClient.cs             # typed HttpClient wrapper shared across slices
+    └── AspireFixture.cs         # Aspire host setup / teardown
+
+```
+
+The same pattern applies to `Collaboration.Tests` and `IdentityAccess.Tests`.
+
+`TestSeedingScript.cs` lives in `AppHost/` — shared seeding infrastructure, not part
+of any single context's test suite.
 
 ---
 
