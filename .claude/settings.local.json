@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__aspire__list_apphosts",
+      "Bash(aspire start *)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "aspire"
+  ]
+}
