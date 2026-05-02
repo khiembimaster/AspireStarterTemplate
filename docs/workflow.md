@@ -6,6 +6,33 @@ mapped to the specific tools and artefacts in this repo.
 
 ---
 
+## DDD First, BDD Second
+
+These are not competing approaches — they are sequential, and the order matters.
+
+Stories written without a settled domain model each implicitly define part of that model
+in isolation. Story A gives `BacklogItem` one set of responsibilities; Story B gives it
+another. The contradiction only surfaces when both are implemented and they conflict — at
+which point the aggregate boundary is wrong and expensive to fix. This is what pure
+outside-in development produces: models that solve a specific story but make no sense for
+the bigger picture, with the core domain buried inside a collection of unrelated stories
+that have to be reconciled after the fact.
+
+**DDD (middle-out)** establishes the stable skeleton first: Aggregate boundaries,
+Ubiquitous Language, Commands, and Domain Events. The domain is the most stable part of
+the system — infrastructure, persistence, and presentation all change around it.
+
+**BDD (outside-in)** then drives each use case from the user's perspective, using the
+vocabulary DDD already defined. Stories deliver business value slice by slice, on top of
+a structure that was designed for the whole picture — not reverse-engineered from a
+collection of siloed implementations.
+
+**The gate between them is `CONTEXT.md`.** A use case may not proceed to Phase 2
+(Illustrate) until its Aggregate, Command, and Domain Event names are settled and absent
+from the `Flagged Ambiguities` section.
+
+---
+
 ## The Pipeline
 
 ```
