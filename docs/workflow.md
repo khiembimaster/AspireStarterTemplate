@@ -6,30 +6,44 @@ mapped to the specific tools and artefacts in this repo.
 
 ---
 
-## DDD First, BDD Second
+## DDD and BDD — a Refinement Loop
 
-These are not competing approaches — they are sequential, and the order matters.
+These are not competing approaches, and they are not strictly sequential either.
 
-Stories written without a settled domain model each implicitly define part of that model
-in isolation. Story A gives `BacklogItem` one set of responsibilities; Story B gives it
-another. The contradiction only surfaces when both are implemented and they conflict — at
-which point the aggregate boundary is wrong and expensive to fix. This is what pure
-outside-in development produces: models that solve a specific story but make no sense for
-the bigger picture, with the core domain buried inside a collection of unrelated stories
-that have to be reconciled after the fact.
+**DDD** sketches the skeleton first: Aggregate boundaries, Ubiquitous Language, Commands,
+and Domain Events emerge from Event Storming. This must come before any story is written.
+Stories written without a domain sketch each implicitly define part of the model in
+isolation — contradictions only surface when both are implemented and they conflict, at
+which point the aggregate boundary is expensive to fix.
 
-**DDD (middle-out)** establishes the stable skeleton first: Aggregate boundaries,
-Ubiquitous Language, Commands, and Domain Events. The domain is the most stable part of
-the system — infrastructure, persistence, and presentation all change around it.
+**BDD scenarios then refine the domain model** — not just verify it. Vernon's *DDD
+Distilled* Ch. 2 makes this explicit:
 
-**BDD (outside-in)** then drives each use case from the user's perspective, using the
-vocabulary DDD already defined. Stories deliver business value slice by slice, on top of
-a structure that was designed for the whole picture — not reverse-engineered from a
-collection of siloed implementations.
+> "Write concrete scenarios: natural language descriptions of how model elements
+> interact. These surface ambiguities and lead to deeper insights. Use Given/When/Then
+> specifications to validate the language against the model."
 
-**The gate between them is `CONTEXT.md`.** A use case may not proceed to Phase 2
-(Illustrate) until its Aggregate, Command, and Domain Event names are settled and absent
-from the `Flagged Ambiguities` section.
+A `.feature` file is not a test bolted onto a finished model. It is the Ubiquitous
+Language made executable. When a scenario reads naturally in business language, the model
+is right. When a scenario feels forced — when you have to translate between what the
+business says and what the step text says — the model has an ambiguity or a wrong
+boundary. That friction is the signal to refine the domain, not to work around it in the
+step definition.
+
+The loop is:
+
+```
+Event Storming  →  initial sketch (Aggregates, Commands, Events in CONTEXT.md)
+      ↑                    ↓
+ model refined      Example Mapping + .feature files
+      ↑                    ↓
+CONTEXT.md updated ← awkward scenario = wrong model
+```
+
+**The gate into the loop is `CONTEXT.md`.** A use case may not proceed to Phase 2
+(Illustrate) until its Aggregate, Command, and Domain Event names are present and absent
+from the `Flagged Ambiguities` section. The gate out of each loop iteration is a
+`.feature` file that reads naturally to a domain expert without explanation.
 
 ---
 
