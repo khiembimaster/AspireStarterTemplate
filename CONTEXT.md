@@ -13,9 +13,9 @@ multiple context mapping relationships, and thin enough to read in one sitting.
 
 | Context | Subdomain Type | Project |
 |---|---|---|
-| `AgileProjectManagement` | Core | `src/AgileProjectManagement/` |
-| `Collaboration` | Supporting | `src/Collaboration/` |
-| `IdentityAccess` | Generic | `src/IdentityAccess/` |
+| `AgileProjectManagement` | Core | `AgileProjectManagement/` |
+| `Collaboration` | Supporting | `Collaboration/` |
+| `IdentityAccess` | Generic | `IdentityAccess/` |
 
 ---
 
@@ -110,21 +110,20 @@ This is Vernon's Rule 4 canonical example.
 
 ```
 AspireStarterTemplate.sln
-├── src/
-│   ├── SharedKernel/
-│   ├── AgileProjectManagement/
-│   │   ├── AgileProjectManagement.Application/
-│   │   ├── AgileProjectManagement.Tests/
-│   │   └── AgileProjectManagement.IntegrationEvents/
-│   ├── Collaboration/
-│   │   ├── Collaboration.Application/
-│   │   ├── Collaboration.Tests/
-│   │   └── Collaboration.IntegrationEvents/
-│   ├── IdentityAccess/
-│   │   ├── IdentityAccess.Application/
-│   │   ├── IdentityAccess.Tests/
-│   │   └── IdentityAccess.IntegrationEvents/
-│   └── Server/                            # YARP gateway + SPA host
+├── SharedKernel/
+├── AgileProjectManagement/
+│   ├── AgileProjectManagement.Application/
+│   ├── AgileProjectManagement.Tests/
+│   └── AgileProjectManagement.IntegrationEvents/
+├── Collaboration/
+│   ├── Collaboration.Application/
+│   ├── Collaboration.Tests/
+│   └── Collaboration.IntegrationEvents/
+├── IdentityAccess/
+│   ├── IdentityAccess.Application/
+│   ├── IdentityAccess.Tests/
+│   └── IdentityAccess.IntegrationEvents/
+├── Gateway/                               # YARP gateway + SPA host
 ├── AppHost/
 ├── frontend/
 └── docs/
@@ -137,7 +136,7 @@ Contains only base DDD primitives — no domain-specific types. Adding anything
 domain-specific to `SharedKernel` is the first sign of Shared Kernel coupling (see ADR-008).
 
 ```
-src/SharedKernel/
+SharedKernel/
 ├── AggregateRoot.cs      # abstract AggregateRoot<TAggregate, TId>
 ├── Entity.cs             # abstract Entity<TId>
 ├── ValueObject.cs        # abstract ValueObject
@@ -155,7 +154,7 @@ reference: aggregate types and their feature slices are co-located under a singl
 folder. There is no `Features/` or `Domain/` nesting layer (see ADR-001).
 
 ```
-src/<ContextName>/<ContextName>.Application/
+<ContextName>/<ContextName>.Application/
 ├── <AggregateName>/
 │   ├── <AggregateName>Aggregate.cs          # AggregateRoot<T,TId> — methods emit events
 │   ├── <AggregateName>WriteModel.cs         # AggregateState<T,TId,TState> — applies events
@@ -183,7 +182,7 @@ src/<ContextName>/<ContextName>.Application/
 Each context folder also contains a test project and an integration-events project:
 
 ```
-src/<ContextName>/
+<ContextName>/
 ├── <ContextName>.Application/              # domain + application code (above)
 ├── <ContextName>.Tests/                    # Reqnroll .feature files + step definitions
 │   ├── Features/
@@ -444,7 +443,7 @@ names are short — namespace provides the disambiguation (e.g.
 `AgileProjectManagement.Tests.Products.Create`).
 
 ```
-src/AgileProjectManagement/AgileProjectManagement.Tests/
+AgileProjectManagement/AgileProjectManagement.Tests/
 ├── Products/
 │   ├── Create/
 │   │   ├── Create.feature
@@ -507,7 +506,7 @@ See `docs/adr/` for rationale behind each locked decision.
 |---|---|
 | Event store + read models | EventFlow + PostgreSQL (`EventFlow.PostgreSql`) |
 | Messaging | RabbitMQ via MassTransit (swappable to Azure Service Bus in one line) |
-| API gateway | YARP (`Server` project) with per-tenant token bucket rate limiting |
+| API gateway | YARP (`Gateway` project) with Aspire service discovery + per-tenant token bucket rate limiting |
 | Auth | Keycloak (realm export committed, mounted at startup via Aspire bind mount) |
 | Multi-tenancy isolation | PostgreSQL Row Level Security + `{tenantId}-` stream prefix |
 | Frontend | React + Vite + TypeScript + TanStack Router/Query + Zustand |
@@ -528,7 +527,7 @@ JWT validation against the Keycloak JWKS endpoint happens at the gateway layer; 
 services trust the validated token forwarded by YARP.
 
 **Per-tenant rate limiting**: `RateLimiterMiddleware` with a `PartitionedRateLimiter` is
-applied in the `Server` project, partitioned by the `tenant_id` JWT claim. Algorithm:
+applied in the `Gateway` project, partitioned by the `tenant_id` JWT claim. Algorithm:
 token bucket — allows short bursts (e.g., a page load firing several requests simultaneously)
 while preventing sustained overuse by any single tenant. Unauthenticated requests fall back
 to IP-based partitioning. This is the noisy-neighbour mitigation layer.
