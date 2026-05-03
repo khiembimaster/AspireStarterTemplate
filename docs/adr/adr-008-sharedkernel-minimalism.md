@@ -8,30 +8,32 @@ A `SharedKernel` project is referenced by all three context services. As Vernon 
 *DDD Distilled*, Shared Kernel coupling is costly: any change to the shared project
 requires coordinated deployment of all consumers.
 
+EventFlow (the event-sourcing framework) already provides all DDD base types:
+- `AggregateRoot<TAggregate, TIdentity>`
+- `ValueObject` and `SingleValueObject<T>`
+- `Identity<TIdentity>`
+- `AggregateEvent<TAggregate, TIdentity>` / `IDomainEvent`
+
+These must not be duplicated in `SharedKernel`.
+
 ## Decision
 
-`SharedKernel` contains **only** these five types:
-
-```
-AggregateRoot<TAggregate, TId>
-Entity<TId>
-ValueObject
-IDomainEvent
-TenantId
-```
+`SharedKernel` contains **only** `TenantId`, which extends EventFlow's `SingleValueObject<>`.
 
 No other types may be added to `SharedKernel`.
 
 ## Rationale
 
-- `TenantId` is the single value object that genuinely crosses all context boundaries:
+- All DDD base types are provided by EventFlow — duplicating them in `SharedKernel` would
+  create a maintenance burden and risk divergence from the framework.
+- `Entity<TId>` is unnecessary in an event-sourced system: aggregate internals are
+  reconstructed from events and expressed as value objects, not as tracked entities.
+- `TenantId` is the single concrete type that genuinely crosses all context boundaries:
   every aggregate root carries one, the RLS middleware reads one, and the JWT ACL
   translates one. It belongs in `SharedKernel`.
 - Everything else is context-specific. A `UserId` in `AgileProjectManagement` and a
   `UserId` in `IdentityAccess` may look identical but carry different invariants and
   lifecycle rules. Sharing them introduces invisible coupling.
-- Base DDD types (`AggregateRoot`, `Entity`, `ValueObject`) belong in `SharedKernel`
-  because they are infrastructure-level abstractions, not domain concepts.
 
 ## Enforcing the Constraint
 
