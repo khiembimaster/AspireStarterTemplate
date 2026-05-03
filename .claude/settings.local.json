@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "mcp__aspire__list_apphosts",
-      "Bash(aspire start *)"
+      "Bash(aspire start *)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh issue *)"
     ]
   },
   "enableAllProjectMcpServers": true,
