@@ -37,7 +37,7 @@ No other types may be added to `SharedKernel`.
 
 ## Enforcing the Constraint
 
-- Any pull request that adds a type to `SharedKernel` beyond the five listed above must
+- Any pull request that adds a type to `SharedKernel` beyond `TenantId` must
   include a new ADR justifying the addition.
 - The first addition is the signal that a coordination cost is being taken on. It should
   be a deliberate decision, not a convenience.
